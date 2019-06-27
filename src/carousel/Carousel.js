@@ -185,21 +185,24 @@ export default class Carousel extends Component {
         this._initPositionsAndInterpolators();
 
         // Without 'requestAnimationFrame' or a `0` timeout, images will randomly not be rendered on Android...
-        requestAnimationFrame(() => {
+        requestAnimationFrame(async () => {
             if (!this._mounted) {
                 return;
             }
 
-            this._snapToItem(_firstItem, false, false, true, false);
-            this._hackActiveSlideAnimation(_firstItem, 'start', true);
+            await this.snapToItem(_firstItem, false, false, true, false, () =>
+            {
+                this._hackActiveSlideAnimation(_firstItem, 'start', true);
 
-            if (apparitionDelay) {
-                this._apparitionTimeout = setTimeout(() => {
+                if (apparitionDelay) {
+                    this._apparitionTimeout = setTimeout(() => {
+                        apparitionCallback();
+                    }, apparitionDelay);
+                } else {
                     apparitionCallback();
-                }, apparitionDelay);
-            } else {
-                apparitionCallback();
-            }
+                }
+            });
+
         });
     }
 
@@ -223,6 +226,9 @@ export default class Carousel extends Component {
         const nextFirstItem = this._getFirstItem(firstItem, nextProps);
         let nextActiveItem = this._activeItem || this._activeItem === 0 ? this._activeItem : nextFirstItem;
 
+        console.log('receiveProps carousel', nextFirstItem, nextActiveItem);
+        console.log('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
+
         const hasNewSliderWidth = sliderWidth && sliderWidth !== this.props.sliderWidth;
         const hasNewSliderHeight = sliderHeight && sliderHeight !== this.props.sliderHeight;
         const hasNewItemWidth = itemWidth && itemWidth !== this.props.itemWidth;
@@ -241,25 +247,47 @@ export default class Carousel extends Component {
 
         if (interpolators.length !== itemsLength || hasNewSliderWidth ||
             hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
-            this._activeItem = nextActiveItem;
+           // this._activeItem = nextActiveItem;
             this._previousItemsLength = itemsLength;
 
             this._initPositionsAndInterpolators(nextProps);
 
-            // Handle scroll issue when dynamically removing items (see #133)
-            // This also fixes first item's active state on Android
-            // Because 'initialScrollIndex' apparently doesn't trigger scroll
-            if (this._previousItemsLength > itemsLength) {
-                this._hackActiveSlideAnimation(nextActiveItem, null, true);
-            }
-
             if (hasNewSliderWidth || hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
-                this._snapToItem(nextActiveItem, false, false, false, false);
+                console.log('hasNewSliderWidth carousel');
+                this.setState({
+                    hideCarousel: true,
+                }, () =>
+                {
+                    this.snapToItem(nextActiveItem, false, false, false, false, () =>
+                    {
+                        // Handle scroll issue when dynamically removing items (see #133)
+                        // This also fixes first item's active state on Android
+                        // Because 'initialScrollIndex' apparently doesn't trigger scroll
+                        if (this._previousItemsLength > itemsLength) {
+                            this._hackActiveSlideAnimation(nextActiveItem, null, true);
+                        }
+                        this.setState({
+                            hideCarousel: false,
+                        })
+                    });
+                });
+
             }
         } else if (nextFirstItem !== this._previousFirstItem && nextFirstItem !== this._activeItem) {
-            this._activeItem = nextFirstItem;
-            this._previousFirstItem = nextFirstItem;
-            this._snapToItem(nextFirstItem, false, true, false, false);
+            /*this._activeItem = nextFirstItem;
+            this._previousFirstItem = nextFirstItem;*/
+            console.log('nextFirstItem snapToItem carousel');
+            this.setState({
+                hideCarousel: true,
+            }, () =>
+            {
+                this.snapToItem(nextFirstItem, false, true, false, false, () =>
+                {
+                    this.setState({
+                        hideCarousel: false,
+                    })
+                });
+            });
         }
 
         if (nextProps.onScroll !== this.props.onScroll) {
@@ -1102,18 +1130,29 @@ export default class Carousel extends Component {
         clearInterval(this._autoplayInterval);
     }
 
-    snapToItem (index, animated = true, fireCallback = true) {
+    snapToItem (index, animated = true, fireCallback = true, initial = false, lockScroll = true, callback = undefined) {
         if (!index || index < 0) {
             index = 0;
         }
 
         const positionIndex = this._getPositionIndex(index);
-
+        console.log('snapToItem', positionIndex, this._activeItem)
         if (positionIndex === this._activeItem) {
+            if(callback)
+            {
+                console.log('callback')
+                callback();
+            }
             return;
         }
 
-        this._snapToItem(positionIndex, animated, fireCallback);
+
+        this._snapToItem(positionIndex, animated, fireCallback,initial, lockScroll);
+
+        setTimeout(() =>
+        {
+            this.snapToItem(positionIndex, animated, fireCallback,initial, lockScroll, callback);
+        }, 10);
     }
 
     snapToNext (animated = true, fireCallback = true) {
