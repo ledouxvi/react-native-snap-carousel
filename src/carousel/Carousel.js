@@ -226,8 +226,8 @@ export default class Carousel extends Component {
         const nextFirstItem = this._getFirstItem(firstItem, nextProps);
         let nextActiveItem = this._activeItem || this._activeItem === 0 ? this._activeItem : nextFirstItem;
 
-        console.log('receiveProps carousel', nextFirstItem, nextActiveItem);
-        console.log('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
+      //  console.log('receiveProps carousel', nextFirstItem, nextActiveItem, this._previousFirstItem);
+      //  console.log('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
 
         const hasNewSliderWidth = sliderWidth && sliderWidth !== this.props.sliderWidth;
         const hasNewSliderHeight = sliderHeight && sliderHeight !== this.props.sliderHeight;
@@ -248,23 +248,23 @@ export default class Carousel extends Component {
         if (interpolators.length !== itemsLength || hasNewSliderWidth ||
             hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
            // this._activeItem = nextActiveItem;
+        //    console.log('check');
             this._previousItemsLength = itemsLength;
 
             this._initPositionsAndInterpolators(nextProps);
 
-            if (hasNewSliderWidth || hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
-                console.log('hasNewSliderWidth carousel');
+               // console.log('hasNewSliderWidth carousel');
                 this.setState({
                     hideCarousel: true,
                 }, () =>
                 {
-                    this.snapToItem(nextActiveItem, false, false, false, false, () =>
+                    this.snapToItem(nextFirstItem, false, false, false, false, () =>
                     {
                         // Handle scroll issue when dynamically removing items (see #133)
                         // This also fixes first item's active state on Android
                         // Because 'initialScrollIndex' apparently doesn't trigger scroll
                         if (this._previousItemsLength > itemsLength) {
-                            this._hackActiveSlideAnimation(nextActiveItem, null, true);
+                            this._hackActiveSlideAnimation(nextFirstItem, null, true);
                         }
                         this.setState({
                             hideCarousel: false,
@@ -272,11 +272,10 @@ export default class Carousel extends Component {
                     });
                 });
 
-            }
-        } else if (nextFirstItem !== this._previousFirstItem && nextFirstItem !== this._activeItem) {
+        } else if (nextFirstItem !== this._activeItem) {
             /*this._activeItem = nextFirstItem;
             this._previousFirstItem = nextFirstItem;*/
-            console.log('nextFirstItem snapToItem carousel');
+           // console.log('nextFirstItem snapToItem carousel');
             this.setState({
                 hideCarousel: true,
             }, () =>
@@ -1136,11 +1135,11 @@ export default class Carousel extends Component {
         }
 
         const positionIndex = this._getPositionIndex(index);
-        console.log('snapToItem', positionIndex, this._activeItem)
+      //  console.log('snapToItem', positionIndex, this._activeItem)
         if (positionIndex === this._activeItem) {
             if(callback)
             {
-                console.log('callback')
+             //   console.log('callback')
                 callback();
             }
             return;
