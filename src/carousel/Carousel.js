@@ -219,15 +219,20 @@ export default class Carousel extends Component {
         const { firstItem, itemHeight, itemWidth, scrollEnabled, sliderHeight, sliderWidth } = nextProps;
         const itemsLength = this._getCustomDataLength(nextProps);
 
+        console.warn('firstItem', firstItem);
         if (!itemsLength) {
             return;
         }
 
         const nextFirstItem = this._getFirstItem(firstItem, nextProps);
-        let nextActiveItem = this._activeItem || this._activeItem === 0 ? this._activeItem : nextFirstItem;
 
-      //  console.log('receiveProps carousel', nextFirstItem, nextActiveItem, this._previousFirstItem);
-      //  console.log('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
+        console.warn('nextFirstItem', nextFirstItem);
+        console.warn('_activeItem', this._activeItem);
+        let nextActiveItem = this._activeItem || this._activeItem !== nextFirstItem ? nextFirstItem : this._activeItem;
+
+        console.warn('nextActiveItem', nextActiveItem);
+        console.warn('receiveProps carousel', nextFirstItem, nextActiveItem);
+        console.warn('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
 
         const hasNewSliderWidth = sliderWidth && sliderWidth !== this.props.sliderWidth;
         const hasNewSliderHeight = sliderHeight && sliderHeight !== this.props.sliderHeight;
@@ -248,34 +253,36 @@ export default class Carousel extends Component {
         if (interpolators.length !== itemsLength || hasNewSliderWidth ||
             hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
            // this._activeItem = nextActiveItem;
-        //    console.log('check');
             this._previousItemsLength = itemsLength;
+            console.warn('if first');
 
             this._initPositionsAndInterpolators(nextProps);
 
-               // console.log('hasNewSliderWidth carousel');
-                this.setState({
-                    hideCarousel: true,
-                }, () =>
-                {
-                    this.snapToItem(nextFirstItem, false, false, false, false, () =>
-                    {
-                        // Handle scroll issue when dynamically removing items (see #133)
-                        // This also fixes first item's active state on Android
-                        // Because 'initialScrollIndex' apparently doesn't trigger scroll
-                        if (this._previousItemsLength > itemsLength) {
-                            this._hackActiveSlideAnimation(nextFirstItem, null, true);
-                        }
-                        this.setState({
-                            hideCarousel: false,
-                        })
-                    });
-                });
+            if (hasNewSliderWidth || hasNewSliderHeight || hasNewItemWidth || hasNewItemHeight) {
+                console.warn('hasNewSliderWidth carousel');
 
-        } else if (nextFirstItem !== this._activeItem) {
+            }
+            this.setState({
+                hideCarousel: true,
+            }, () =>
+            {
+                this.snapToItem(nextActiveItem, false, false, false, false, () =>
+                {
+                    // Handle scroll issue when dynamically removing items (see #133)
+                    // This also fixes first item's active state on Android
+                    // Because 'initialScrollIndex' apparently doesn't trigger scroll
+                    if (this._previousItemsLength > itemsLength) {
+                        this._hackActiveSlideAnimation(nextActiveItem, null, true);
+                    }
+                    this.setState({
+                        hideCarousel: false,
+                    })
+                });
+            });
+        } else if (nextFirstItem !== this._previousFirstItem && nextFirstItem !== this._activeItem) {
             /*this._activeItem = nextFirstItem;
             this._previousFirstItem = nextFirstItem;*/
-           // console.log('nextFirstItem snapToItem carousel');
+            console.warn('nextFirstItem snapToItem carousel');
             this.setState({
                 hideCarousel: true,
             }, () =>
@@ -786,6 +793,33 @@ export default class Carousel extends Component {
         }
     }
 
+    _scrollToIndex (index, offset, animated = true) {
+        const { vertical } = this.props;
+        const wrappedRef = this._getWrappedRef();
+
+        if (!this._mounted || !wrappedRef) {
+            return;
+        }
+
+        const specificOptions = this._needsScrollView() ? {
+            x: vertical ? 0 : offset,
+            y: vertical ? offset : 0
+        } : {
+            index,
+            viewPosition: 0.5
+        };
+        const options = {
+            ...specificOptions,
+            animated
+        };
+
+        if (this._needsScrollView()) {
+            wrappedRef.scrollTo(options);
+        } else {
+            wrappedRef.scrollToIndex(options);
+        }
+    }
+
     _onScroll (event) {
         const { callbackOffsetMargin, enableMomentum, onScroll } = this.props;
 
@@ -1054,13 +1088,13 @@ export default class Carousel extends Component {
         this._itemToSnapTo = index;
         this._scrollOffsetRef = this._positions[index] && this._positions[index].start;
         this._onScrollTriggered = false;
-
+        console.log("offseet", this._scrollOffsetRef);
         if (!this._scrollOffsetRef && this._scrollOffsetRef !== 0) {
             return;
         }
 
+        //this._scrollToIndex(index, this._scrollOffsetRef, animated);
         this._scrollTo(this._scrollOffsetRef, animated);
-
         if (enableMomentum) {
             // iOS fix, check the note in the constructor
             if (IS_IOS && !initial) {
@@ -1135,11 +1169,11 @@ export default class Carousel extends Component {
         }
 
         const positionIndex = this._getPositionIndex(index);
-      //  console.log('snapToItem', positionIndex, this._activeItem)
+        console.log('snapToItem', positionIndex, this._activeItem)
         if (positionIndex === this._activeItem) {
             if(callback)
             {
-             //   console.log('callback')
+                console.log('callback')
                 callback();
             }
             return;
@@ -1151,7 +1185,7 @@ export default class Carousel extends Component {
         setTimeout(() =>
         {
             this.snapToItem(positionIndex, animated, fireCallback,initial, lockScroll, callback);
-        }, 10);
+        }, 1);
     }
 
     snapToNext (animated = true, fireCallback = true) {
@@ -1308,6 +1342,8 @@ export default class Carousel extends Component {
             keyExtractor,
             sliderWidth,
             sliderHeight,
+            firstItem,
+            itemWidth,
             style,
             vertical
         } = this.props;
@@ -1336,8 +1372,15 @@ export default class Carousel extends Component {
             // extraData: this.state,
             renderItem: this._renderItem,
             numColumns: 1,
-            getItemLayout: undefined, // see #193
-            initialScrollIndex: undefined, // see #193
+            getItemLayout: (data, index) =>
+            {
+                return {
+                    length: itemWidth,
+                    offset: itemWidth * index,
+                    index
+                }
+            }, // see #193
+            initialScrollIndex: firstItem, // see #193
             keyExtractor: keyExtractor || this._getKeyExtractor
         } : {};
 
