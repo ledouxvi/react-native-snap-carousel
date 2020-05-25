@@ -279,7 +279,7 @@ export default class Carousel extends Component {
                     })
                 });
             });
-        } else if (nextFirstItem !== this._previousFirstItem && nextFirstItem !== this._activeItem) {
+        } else if (nextFirstItem !== this._activeItem) {
             /*this._activeItem = nextFirstItem;
             this._previousFirstItem = nextFirstItem;*/
             console.warn('nextFirstItem snapToItem carousel');
