@@ -219,20 +219,13 @@ export default class Carousel extends Component {
         const { firstItem, itemHeight, itemWidth, scrollEnabled, sliderHeight, sliderWidth } = nextProps;
         const itemsLength = this._getCustomDataLength(nextProps);
 
-        console.warn('firstItem', firstItem);
         if (!itemsLength) {
             return;
         }
 
         const nextFirstItem = this._getFirstItem(firstItem, nextProps);
 
-        console.warn('nextFirstItem', nextFirstItem);
-        console.warn('_activeItem', this._activeItem);
         let nextActiveItem = this._activeItem || this._activeItem !== nextFirstItem ? nextFirstItem : this._activeItem;
-
-        console.warn('nextActiveItem', nextActiveItem);
-        console.warn('receiveProps carousel', nextFirstItem, nextActiveItem);
-        console.warn('test carousel', 'nextFirstItem', nextFirstItem, 'this._previousFirstItem', this._previousFirstItem, 'nextFirstItem', nextFirstItem, 'this._activeItem', this._activeItem)
 
         const hasNewSliderWidth = sliderWidth && sliderWidth !== this.props.sliderWidth;
         const hasNewSliderHeight = sliderHeight && sliderHeight !== this.props.sliderHeight;
